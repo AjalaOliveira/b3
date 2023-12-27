@@ -2,9 +2,11 @@
 using B3.Worker.Data.Interfaces;
 using B3.Worker.Service.Interfaces.Services;
 using B3.Worker.Shared.Settings;
+using B3.Worker.Shared.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -30,8 +32,14 @@ namespace B3.Worker.Service.Services
         {
             try
             {
-                await ConnectWebSocketAsync(_appSettings.CurrentValue.BitstampUrl, _appSettings.CurrentValue.BtcUsdMessage);
-                await ConnectWebSocketAsync(_appSettings.CurrentValue.BitstampUrl, _appSettings.CurrentValue.EthUsdMessage);
+                var websocketCurrentData = await GetWebsocketCurrentData();
+                var lastFiveSecondsRegisters = await GetlastFiveSecondsRegisters();
+
+                SetValuesToShow(lastFiveSecondsRegisters);
+
+                foreach (var item in websocketCurrentData)
+                    ShowWebsocketCurrentDate(item);
+
             }
             catch (Exception ex)
             {
@@ -41,7 +49,18 @@ namespace B3.Worker.Service.Services
 
         #region Private Methods
 
-        public static async Task ConnectWebSocketAsync(string uri, string requestMessage)
+        private async Task<IList<OrderEntity>> GetWebsocketCurrentData()
+        {
+            var orderList = new List<OrderEntity>
+            {
+                await ConnectWebSocketAsync(_appSettings.CurrentValue.BitstampUrl, _appSettings.CurrentValue.BtcUsdMessage),
+                await ConnectWebSocketAsync(_appSettings.CurrentValue.BitstampUrl, _appSettings.CurrentValue.EthUsdMessage)
+            };
+
+            return orderList;
+        }
+
+        public static async Task<OrderEntity> ConnectWebSocketAsync(string uri, string requestMessage)
         {
             using (ClientWebSocket webSocket = new())
             {
@@ -56,11 +75,9 @@ namespace B3.Worker.Service.Services
                     var orderEntity = JsonConvert.DeserializeObject<OrderEntity>(receivedMessage);
 
                     if (receivedMessage.StartsWith("{\"data") && orderEntity != null)
-                    {
-                        ShowMonitorValues(orderEntity);
-                        break;
-                    }
+                        return orderEntity;
                 }
+                return await ConnectWebSocketAsync(uri, requestMessage);
             }
         }
 
@@ -78,17 +95,20 @@ namespace B3.Worker.Service.Services
             return Encoding.UTF8.GetString(buffer, 0, result.Count);
         }
 
-        private async Task<IList<OrderEntity>> GetMonitorValues()
+        private async Task<IList<OrderEntity>> GetlastFiveSecondsRegisters()
         {
             return await _orderRepository.GetMonitorValues();
         }
 
-        private static void ShowMonitorValues(OrderEntity order)
+        private void SetValuesToShow(IList<OrderEntity> orderList)
+        {
+
+        }
+
+        private static void ShowWebsocketCurrentDate(OrderEntity order)
         {
             var lowestPrice = Convert.ToDecimal(order.data.bids.First().Last()) / Convert.ToDecimal(order.data.bids.First().First());
-
             var averagePrice = Convert.ToDecimal(order.data.bids.First().Last()) / Convert.ToDecimal(order.data.bids.First().First());
-
             var highestPrice = lowestPrice;
 
             foreach (var item in order.data.bids)
@@ -105,10 +125,10 @@ namespace B3.Worker.Service.Services
 
             Console.WriteLine("");
             Console.WriteLine(order.channel.ToUpper());
-            Console.WriteLine($"Websocket Message datetime: {order.dateTime}");
+            Console.WriteLine($"Websocket Message datetime (UTC): {DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(order.data.timestamp))}");
             Console.WriteLine($"Menor Preço: {lowestPrice}");
             Console.WriteLine($"Maior Preço: {highestPrice}");
-            Console.WriteLine($"Média de preço entre todos: {averagePrice / order.data.bids.Count}");
+            Console.WriteLine($"Média de preço: {averagePrice / order.data.bids.Count}");
             Console.WriteLine("");
         }
 

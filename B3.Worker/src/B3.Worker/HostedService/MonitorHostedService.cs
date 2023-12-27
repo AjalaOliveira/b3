@@ -9,6 +9,7 @@ namespace B3.Worker.HostedService
         private readonly ILogger<MonitorHostedService> _logger;
         private readonly IMonitorService _monitorService;
         private readonly IOptionsMonitor<AppSettings> _appSettings;
+        private bool isRunning = false;
 
         public MonitorHostedService(
             ILogger<MonitorHostedService> logger,
@@ -24,10 +25,15 @@ namespace B3.Worker.HostedService
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                Thread.Sleep(_appSettings.CurrentValue.ExecutionIntervalMiliseconds);
+                if (!isRunning)
+                {
+                    isRunning = true;
+                    _logger.LogWarning("Serviço executado em: {time}", DateTimeOffset.Now);
+                    await _monitorService.MonitorExecute();
+                    Thread.Sleep(_appSettings.CurrentValue.ExecutionIntervalMiliseconds);
+                    isRunning = false;
+                }
 
-                _logger.LogInformation("Serviço executado em: {time}", DateTimeOffset.Now);
-                await _monitorService.MonitorExecute();
             }
         }
     }

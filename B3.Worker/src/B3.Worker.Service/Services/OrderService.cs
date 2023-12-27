@@ -2,6 +2,7 @@
 using B3.Worker.Data.Interfaces;
 using B3.Worker.Service.Interfaces.Services;
 using B3.Worker.Shared.Settings;
+using B3.Worker.Shared.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -68,7 +69,7 @@ namespace B3.Worker.Service.Process
 
                     if (receivedMessage.StartsWith("{\"data") && orderEntity != null)
                     {
-                        orderEntity.dateTime = DateTime.Now;
+                        orderEntity.dateTime = DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(orderEntity.data.timestamp));
                         await orderRepository.SaveOrder(orderEntity);
                     }
                 }
