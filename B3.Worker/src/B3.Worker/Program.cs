@@ -3,6 +3,7 @@ using B3.Worker.Data.Interfaces;
 using B3.Worker.HostedService;
 using B3.Worker.Service.Interfaces.Services;
 using B3.Worker.Service.Process;
+using B3.Worker.Service.Services;
 using B3.Worker.Shared.Settings;
 
 IHost host = Host.CreateDefaultBuilder(args)
@@ -16,6 +17,8 @@ IHost host = Host.CreateDefaultBuilder(args)
         services.AddHostedService<MonitorHostedService>();
 
         services.AddTransient<IOrderService, OrderService>();
+        services.AddTransient<IMonitorService, MonitorService>();
+
         services.AddTransient<IOrderRepository, OrderRepository>();
     })
     .Build();

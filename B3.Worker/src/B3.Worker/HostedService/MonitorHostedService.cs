@@ -7,17 +7,17 @@ namespace B3.Worker.HostedService
     internal class MonitorHostedService : BackgroundService
     {
         private readonly ILogger<MonitorHostedService> _logger;
-        private readonly IOrderService _orderService;
+        private readonly IMonitorService _monitorService;
         private readonly IOptionsMonitor<AppSettings> _appSettings;
 
         public MonitorHostedService(
             ILogger<MonitorHostedService> logger,
             IOptionsMonitor<AppSettings> appSettings,
-        IOrderService orderService)
+            IMonitorService monitorService)
         {
             _logger = logger;
             _appSettings = appSettings;
-            _orderService = orderService;
+            _monitorService = monitorService;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -26,8 +26,8 @@ namespace B3.Worker.HostedService
             {
                 Thread.Sleep(_appSettings.CurrentValue.ExecutionIntervalMiliseconds);
 
-                _logger.LogInformation("MonitorHostedService.ExecuteAsync - Serviço executado em: {time}", DateTimeOffset.Now);
-                await _orderService.MonitorExecute();
+                _logger.LogInformation("Serviço executado em: {time}", DateTimeOffset.Now);
+                await _monitorService.MonitorExecute();
             }
         }
     }

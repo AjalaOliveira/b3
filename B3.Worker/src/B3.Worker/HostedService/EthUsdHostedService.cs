@@ -19,7 +19,7 @@ namespace B3.Worker.HostedService
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("ETH/USD.ExecuteAsync - Serviço executado em: {time}", DateTimeOffset.Now);
+                _logger.LogInformation("Serviço executado em: {time}", DateTimeOffset.Now);
                 await _orderService.EthUsdExecute();
             }
         }

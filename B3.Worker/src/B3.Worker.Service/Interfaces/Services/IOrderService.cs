@@ -4,6 +4,5 @@
     {
         Task BtcUsdExecute();
         Task EthUsdExecute();
-        Task MonitorExecute();
     }
 }
