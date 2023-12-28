@@ -43,9 +43,7 @@ namespace B3.Worker.Service.Services
             }
         }
 
-        #region Private Methods
-
-        private async Task<IList<MessageDeserialized>> GetWebsocketCurrentData()
+        public async Task<IList<MessageDeserialized>> GetWebsocketCurrentData()
         {
             var orderList = new List<MessageDeserialized>
             {
@@ -77,13 +75,13 @@ namespace B3.Worker.Service.Services
             }
         }
 
-        static async Task SendWebSocketMessage(ClientWebSocket webSocket, string message)
+        public async Task SendWebSocketMessage(ClientWebSocket webSocket, string message)
         {
             var buffer = Encoding.UTF8.GetBytes(message);
             await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        static async Task<string> ReceiveWebSocketMessage(ClientWebSocket webSocket)
+        public async Task<string> ReceiveWebSocketMessage(ClientWebSocket webSocket)
         {
             var buffer = new byte[20000];
             var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
@@ -91,12 +89,12 @@ namespace B3.Worker.Service.Services
             return Encoding.UTF8.GetString(buffer, 0, result.Count);
         }
 
-        private async Task<IList<OrderEntity>> GetlastFiveSecondsRegisters()
+        public async Task<IList<OrderEntity>> GetlastFiveSecondsRegisters()
         {
             return await _orderRepository.GetMonitorValues();
         }
 
-        private void ShowMonitorValues(IList<MessageDeserialized> websocket, IList<OrderEntity> database)
+        public void ShowMonitorValues(IList<MessageDeserialized> websocket, IList<OrderEntity> database)
         {
 
             if (websocket.Count > 0)
@@ -122,7 +120,7 @@ namespace B3.Worker.Service.Services
             }
         }
 
-        private static void ShowWebsocketCurrentData(IList<MessageDeserialized> messages)
+        public static void ShowWebsocketCurrentData(IList<MessageDeserialized> messages)
         {
             foreach (var item in messages)
             {
@@ -150,7 +148,7 @@ namespace B3.Worker.Service.Services
             }
         }
 
-        private static void ShowLastFiveMinutesData(IList<OrderEntity> orders)
+        public static void ShowLastFiveMinutesData(IList<OrderEntity> orders)
         {
             var averagePriceBtcUsd = orders.Where(x => x.channel == CurrencyPair.BtcUsd)
                                            .Average(x => x.orderValue);

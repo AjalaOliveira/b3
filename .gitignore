@@ -7,3 +7,5 @@
 /B3.Worker/src/*/bin
 /B3.Worker/src/*/obj
 
+/B3.Worker/tests/unit/*/bin
+/B3.Worker/tests/unit/*/obj

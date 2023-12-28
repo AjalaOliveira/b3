@@ -53,9 +53,7 @@ namespace B3.Worker.Service.Process
             }
         }
 
-        #region Private Methods
-
-        static async Task ConnectWebSocketAsync(IOrderRepository orderRepository, string uri, string requestMessage)
+        public async Task ConnectWebSocketAsync(IOrderRepository orderRepository, string uri, string requestMessage)
         {
             using (ClientWebSocket webSocket = new())
             {
@@ -79,13 +77,13 @@ namespace B3.Worker.Service.Process
             }
         }
 
-        static async Task SendWebSocketMessage(ClientWebSocket webSocket, string message)
+        public async Task SendWebSocketMessage(ClientWebSocket webSocket, string message)
         {
             var buffer = Encoding.UTF8.GetBytes(message);
             await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        static async Task<string> ReceiveWebSocketMessage(ClientWebSocket webSocket)
+        public async Task<string> ReceiveWebSocketMessage(ClientWebSocket webSocket)
         {
             var buffer = new byte[20000];
             var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
@@ -93,11 +91,13 @@ namespace B3.Worker.Service.Process
             return Encoding.UTF8.GetString(buffer, 0, result.Count);
         }
 
-        private static List<OrderEntity> BuildDataSetToBeSaved(MessageDeserialized? messageSerializedJson)
+        public List<OrderEntity> BuildDataSetToBeSaved(MessageDeserialized? messageSerializedJson)
         {
+            var dateTimeTools = new DateTimeTools();
+
             var bids = messageSerializedJson.data.bids.Select(x => new OrderEntity
             {
-                dateTime = DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(messageSerializedJson.data.timestamp)),
+                dateTime = dateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(messageSerializedJson.data.timestamp)),
                 price = Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
                 amount = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture),
                 orderValue = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture) / Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
@@ -109,7 +109,7 @@ namespace B3.Worker.Service.Process
 
             var asks = messageSerializedJson.data.asks.Select(x => new OrderEntity
             {
-                dateTime = DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(messageSerializedJson.data.timestamp)),
+                dateTime = dateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(messageSerializedJson.data.timestamp)),
                 price = Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
                 amount = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture),
                 orderValue = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture) / Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
@@ -123,7 +123,5 @@ namespace B3.Worker.Service.Process
 
             return bids;
         }
-
-        #endregion
     }
 }
