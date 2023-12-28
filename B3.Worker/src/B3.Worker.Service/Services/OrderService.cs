@@ -1,11 +1,13 @@
 ﻿using B3.Worker.Data.Entities;
 using B3.Worker.Data.Interfaces;
 using B3.Worker.Service.Interfaces.Services;
+using B3.Worker.Shared.Enums;
 using B3.Worker.Shared.Settings;
 using B3.Worker.Shared.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -63,14 +65,15 @@ namespace B3.Worker.Service.Process
 
                 while (webSocket.State == WebSocketState.Open)
                 {
-                    string receivedMessage = await ReceiveWebSocketMessage(webSocket);
+                    string message = await ReceiveWebSocketMessage(webSocket);
 
-                    var orderEntity = JsonConvert.DeserializeObject<OrderEntity>(receivedMessage);
+                    var messageSerializedJson = JsonConvert.DeserializeObject<MessageDeserialized>(message);
 
-                    if (receivedMessage.StartsWith("{\"data") && orderEntity != null)
+                    if (message.StartsWith("{\"data") && messageSerializedJson != null)
                     {
-                        orderEntity.dateTime = DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(orderEntity.data.timestamp));
-                        await orderRepository.SaveOrder(orderEntity);
+                        List<OrderEntity> bids = BuildDataSetToBeSaved(messageSerializedJson);
+
+                        await orderRepository.SaveOrder(bids);
                     }
                 }
             }
@@ -88,6 +91,37 @@ namespace B3.Worker.Service.Process
             var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
             return Encoding.UTF8.GetString(buffer, 0, result.Count);
+        }
+
+        private static List<OrderEntity> BuildDataSetToBeSaved(MessageDeserialized? messageSerializedJson)
+        {
+            var bids = messageSerializedJson.data.bids.Select(x => new OrderEntity
+            {
+                dateTime = DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(messageSerializedJson.data.timestamp)),
+                price = Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
+                amount = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture),
+                orderValue = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture) / Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
+                orderType = OrderType.Bid,
+                timestamp = messageSerializedJson.data != null ? (long)Convert.ToDouble(messageSerializedJson.data.timestamp) : 0,
+                microtimestamp = messageSerializedJson.data != null ? (long)Convert.ToDouble(messageSerializedJson.data.microtimestamp) : 0,
+                channel = Enum.GetValues(typeof(CurrencyPair)).Cast<CurrencyPair>().FirstOrDefault(v => v.GetDescription() == messageSerializedJson.channel)
+            }).ToList();
+
+            var asks = messageSerializedJson.data.asks.Select(x => new OrderEntity
+            {
+                dateTime = DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(messageSerializedJson.data.timestamp)),
+                price = Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
+                amount = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture),
+                orderValue = Convert.ToDecimal(x.Last(), CultureInfo.InvariantCulture) / Convert.ToDecimal(x.First(), CultureInfo.InvariantCulture),
+                orderType = OrderType.Ask,
+                timestamp = messageSerializedJson.data != null ? (long)Convert.ToDouble(messageSerializedJson.data.timestamp) : 0,
+                microtimestamp = messageSerializedJson.data != null ? (long)Convert.ToDouble(messageSerializedJson.data.microtimestamp) : 0,
+                channel = Enum.GetValues(typeof(CurrencyPair)).Cast<CurrencyPair>().FirstOrDefault(v => v.GetDescription() == messageSerializedJson.channel)
+            }).ToList();
+
+            bids.AddRange(asks);
+
+            return bids;
         }
 
         #endregion

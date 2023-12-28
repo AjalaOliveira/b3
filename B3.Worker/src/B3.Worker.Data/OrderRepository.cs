@@ -23,24 +23,26 @@ namespace B3.Worker.Data
             _appSettings = appSettings;
         }
 
-        public async Task SaveOrder(OrderEntity orderEntity)
+        public async Task SaveOrder(IList<OrderEntity> orders)
         {
             MongoClient client = new(_mongoDBSettings.CurrentValue.ConnectionString);
             var playlistCollection = client.GetDatabase(_mongoDBSettings.CurrentValue.DatabaseName).GetCollection<OrderEntity>("orders");
-            await playlistCollection.InsertOneAsync(orderEntity);
+            await playlistCollection.InsertManyAsync(orders);
         }
 
         public async Task<IList<OrderEntity>> GetMonitorValues()
         {
             MongoClient client = new(_mongoDBSettings.CurrentValue.ConnectionString);
+
             var playlistCollection = client.GetDatabase(_mongoDBSettings.CurrentValue.DatabaseName).GetCollection<OrderEntity>("orders");
 
-            var query = (from e in playlistCollection.AsQueryable<OrderEntity>()
-                         where e.dateTime >= DateTime.Now.AddMilliseconds(-_appSettings.CurrentValue.ExecutionIntervalMiliseconds)
-                         orderby e.dateTime descending
-                         select e).ToList();
+            var query = playlistCollection.AsQueryable<OrderEntity>()
+                                          .Where(o => o.timestamp >= (long)Convert.ToDouble(DateTimeOffset.UtcNow.AddMilliseconds(-_appSettings.CurrentValue.ExecutionIntervalMiliseconds).ToUnixTimeSeconds().ToString()))
+                                          .OrderByDescending(o => o.timestamp)
+                                          .ToList();
 
-            return query;
+            return await Task.FromResult(query);
+
         }
     }
 }

@@ -1,12 +1,11 @@
 ﻿using B3.Worker.Data.Entities;
 using B3.Worker.Data.Interfaces;
 using B3.Worker.Service.Interfaces.Services;
+using B3.Worker.Shared.Enums;
 using B3.Worker.Shared.Settings;
-using B3.Worker.Shared.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
 
@@ -35,10 +34,7 @@ namespace B3.Worker.Service.Services
                 var websocketCurrentData = await GetWebsocketCurrentData();
                 var lastFiveSecondsRegisters = await GetlastFiveSecondsRegisters();
 
-                SetValuesToShow(lastFiveSecondsRegisters);
-
-                foreach (var item in websocketCurrentData)
-                    ShowWebsocketCurrentDate(item);
+                ShowMonitorValues(websocketCurrentData, lastFiveSecondsRegisters);
 
             }
             catch (Exception ex)
@@ -49,9 +45,9 @@ namespace B3.Worker.Service.Services
 
         #region Private Methods
 
-        private async Task<IList<OrderEntity>> GetWebsocketCurrentData()
+        private async Task<IList<MessageDeserialized>> GetWebsocketCurrentData()
         {
-            var orderList = new List<OrderEntity>
+            var orderList = new List<MessageDeserialized>
             {
                 await ConnectWebSocketAsync(_appSettings.CurrentValue.BitstampUrl, _appSettings.CurrentValue.BtcUsdMessage),
                 await ConnectWebSocketAsync(_appSettings.CurrentValue.BitstampUrl, _appSettings.CurrentValue.EthUsdMessage)
@@ -60,7 +56,7 @@ namespace B3.Worker.Service.Services
             return orderList;
         }
 
-        public static async Task<OrderEntity> ConnectWebSocketAsync(string uri, string requestMessage)
+        public static async Task<MessageDeserialized> ConnectWebSocketAsync(string uri, string requestMessage)
         {
             using (ClientWebSocket webSocket = new())
             {
@@ -72,7 +68,7 @@ namespace B3.Worker.Service.Services
                 {
                     string receivedMessage = await ReceiveWebSocketMessage(webSocket);
 
-                    var orderEntity = JsonConvert.DeserializeObject<OrderEntity>(receivedMessage);
+                    var orderEntity = JsonConvert.DeserializeObject<MessageDeserialized>(receivedMessage);
 
                     if (receivedMessage.StartsWith("{\"data") && orderEntity != null)
                         return orderEntity;
@@ -100,38 +96,84 @@ namespace B3.Worker.Service.Services
             return await _orderRepository.GetMonitorValues();
         }
 
-        private void SetValuesToShow(IList<OrderEntity> orderList)
+        private void ShowMonitorValues(IList<MessageDeserialized> websocket, IList<OrderEntity> database)
         {
 
-        }
-
-        private static void ShowWebsocketCurrentDate(OrderEntity order)
-        {
-            var lowestPrice = Convert.ToDecimal(order.data.bids.First().Last()) / Convert.ToDecimal(order.data.bids.First().First());
-            var averagePrice = Convert.ToDecimal(order.data.bids.First().Last()) / Convert.ToDecimal(order.data.bids.First().First());
-            var highestPrice = lowestPrice;
-
-            foreach (var item in order.data.bids)
+            if (websocket.Count > 0)
             {
-                averagePrice += Convert.ToDecimal(item.Last()) / Convert.ToDecimal(item.First());
-                var price = Convert.ToDecimal(item.Last()) / Convert.ToDecimal(item.First());
-
-                if (price < lowestPrice)
-                    lowestPrice = price;
-
-                if (price > highestPrice)
-                    highestPrice = price;
+                //Console.WriteLine($"WEBSOCKET TIMESTAMP IN DATETIME     ------------------------------------------------------------------------------------>  '{DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(websocket.FirstOrDefault().data.timestamp))}'");
+                //Console.WriteLine($"WEBSOCKET TOTAL                     ------------------------------------------------------------------------------------>  '{websocket.Count()}'");
+                Console.WriteLine("");
+                Console.WriteLine($"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     INSTANTE ATUAL     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+                ShowWebsocketCurrentData(websocket);
             }
 
-            Console.WriteLine("");
-            Console.WriteLine(order.channel.ToUpper());
-            Console.WriteLine($"Websocket Message datetime (UTC): {DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(order.data.timestamp))}");
-            Console.WriteLine($"Menor Preço: {lowestPrice}");
-            Console.WriteLine($"Maior Preço: {highestPrice}");
-            Console.WriteLine($"Média de preço: {averagePrice / order.data.bids.Count}");
-            Console.WriteLine("");
+            if (database.Count > 0)
+            {
+                //Console.WriteLine($"DATABASE TIMESTAMP IN DATETIME      ------------------------------------------------------------------------------------>  '{DateTimeTools.SetDateTimeFromTimestamp((long)Convert.ToDouble(database.FirstOrDefault().timestamp))}'");
+                //Console.WriteLine($"DATABASE TOTAL                      ------------------------------------------------------------------------------------>  '{database.Count()}'");
+                Console.WriteLine("");
+                Console.WriteLine($"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+                Console.WriteLine("");
+                Console.WriteLine($"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     ÚLTIMOS '{_appSettings.CurrentValue.ExecutionIntervalMiliseconds / 1000}' SEGUNDOS     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+                Console.WriteLine("");
+
+                ShowLastFiveMinutesData(database);
+            }
         }
 
-        #endregion
+        private static void ShowWebsocketCurrentData(IList<MessageDeserialized> messages)
+        {
+            foreach (var item in messages)
+            {
+                var lowestPrice = Convert.ToDecimal(item.data.bids.First().Last()) / Convert.ToDecimal(item.data.bids.First().First());
+                var averagePrice = Convert.ToDecimal(item.data.bids.First().Last()) / Convert.ToDecimal(item.data.bids.First().First());
+                var highestPrice = lowestPrice;
+
+                foreach (var bid in item.data.bids)
+                {
+                    averagePrice += Convert.ToDecimal(bid.Last()) / Convert.ToDecimal(bid.First());
+                    var price = Convert.ToDecimal(bid.Last()) / Convert.ToDecimal(bid.First());
+
+                    if (price < lowestPrice)
+                        lowestPrice = price;
+
+                    if (price > highestPrice)
+                        highestPrice = price;
+                }
+
+                Console.WriteLine("");
+                Console.WriteLine(item.channel.ToUpper());
+                Console.WriteLine($"Menor Preço: {lowestPrice}");
+                Console.WriteLine($"Maior Preço: {highestPrice}");
+                Console.WriteLine($"Média de preço: {averagePrice / item.data.bids.Count}");
+            }
+        }
+
+        private static void ShowLastFiveMinutesData(IList<OrderEntity> orders)
+        {
+            var averagePriceBtcUsd = orders.Where(x => x.channel == CurrencyPair.BtcUsd)
+                                           .Average(x => x.orderValue);
+
+            Console.WriteLine($"Média de preço acumulado no últimos 5 segundo do ativo BTC/USD: {averagePriceBtcUsd}");
+
+            var averageQuantityBtcUsd = orders.Where(x => x.channel == CurrencyPair.BtcUsd)
+                                              .Average(x => x.amount);
+
+            Console.WriteLine($"Média de quantidade acumulada no últimos 5 segundo do ativo BTC/USD: {averageQuantityBtcUsd}");
+
+            var averagePriceEthUsd = orders.Where(x => x.channel == CurrencyPair.EthUsd)
+                                           .Average(x => x.orderValue);
+
+            Console.WriteLine("");
+            Console.WriteLine($"Média de preço acumulado no últimos 5 segundo do ativo ETH/USD: {averagePriceEthUsd}");
+
+            var averageQuantityEthUsd = orders.Where(x => x.channel == CurrencyPair.EthUsd)
+                                              .Average(x => x.amount);
+
+            Console.WriteLine($"Média de quantidade acumulada no últimos 5 segundo do ativo ETH/USD: {averageQuantityEthUsd}");
+
+            #endregion
+        }
     }
 }

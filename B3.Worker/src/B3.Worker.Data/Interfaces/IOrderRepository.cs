@@ -5,6 +5,6 @@ namespace B3.Worker.Data.Interfaces
     public interface IOrderRepository
     {
         Task<IList<OrderEntity>> GetMonitorValues();
-        Task SaveOrder(OrderEntity orderEntity);
+        Task SaveOrder(IList<OrderEntity> orders);
     }
 }
