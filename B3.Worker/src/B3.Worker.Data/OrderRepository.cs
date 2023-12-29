@@ -1,5 +1,6 @@
 ﻿using B3.Worker.Data.Entities;
 using B3.Worker.Data.Interfaces;
+using B3.Worker.Shared.Interfaces;
 using B3.Worker.Shared.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,12 +12,12 @@ namespace B3.Worker.Data
     {
         private readonly ILogger<OrderRepository> _logger;
         private readonly IOptionsMonitor<MongoDBSettings> _mongoDBSettings;
-        private readonly IOptionsMonitor<AppSettings> _appSettings;
+        private readonly IAppSettings _appSettings;
 
         public OrderRepository(
             ILogger<OrderRepository> logger,
             IOptionsMonitor<MongoDBSettings> mongoDBSettings,
-            IOptionsMonitor<AppSettings> appSettings)
+            IAppSettings appSettings)
         {
             _logger = logger;
             _mongoDBSettings = mongoDBSettings;
@@ -37,7 +38,7 @@ namespace B3.Worker.Data
             var playlistCollection = client.GetDatabase(_mongoDBSettings.CurrentValue.DatabaseName).GetCollection<OrderEntity>("orders");
 
             var query = playlistCollection.AsQueryable<OrderEntity>()
-                                          .Where(o => o.timestamp >= (long)Convert.ToDouble(DateTimeOffset.UtcNow.AddMilliseconds(-_appSettings.CurrentValue.ExecutionIntervalMiliseconds).ToUnixTimeSeconds().ToString()))
+                                          .Where(o => o.timestamp >= (long)Convert.ToDouble(DateTimeOffset.UtcNow.AddMilliseconds(-_appSettings.GetExecutionIntervalMiliseconds()).ToUnixTimeSeconds().ToString()))
                                           .OrderByDescending(o => o.timestamp)
                                           .ToList();
 

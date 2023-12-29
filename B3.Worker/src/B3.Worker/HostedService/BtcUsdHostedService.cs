@@ -2,7 +2,7 @@
 
 namespace B3.Worker.HostedService
 {
-    internal class BtcUsdHostedService : BackgroundService
+    public class BtcUsdHostedService : BackgroundService
     {
         private readonly ILogger<BtcUsdHostedService> _logger;
         private readonly IOrderService _orderService;
@@ -18,9 +18,20 @@ namespace B3.Worker.HostedService
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
+                await DoWorkAsync();
+        }
+
+        public async Task DoWorkAsync()
+        {
+            _logger.LogInformation("Serviço executado em: {time}", DateTimeOffset.Now);
+            try
             {
-                _logger.LogInformation("Serviço executado em: {time}", DateTimeOffset.Now);
                 await _orderService.BtcUsdExecute();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Erro durante execução do serviço: {message}", ex.Message);
+                throw;
             }
         }
     }

@@ -1,6 +1,7 @@
 using B3.Worker.Shared.Utils;
+using Xunit;
 
-namespace B3.Worker.Shared.Tests
+namespace B3.Worker.Shared.Tests.Utils
 {
     public class DateTimeToolsTests
     {

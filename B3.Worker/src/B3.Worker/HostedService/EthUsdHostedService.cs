@@ -2,7 +2,7 @@
 
 namespace B3.Worker.HostedService
 {
-    internal class EthUsdHostedService : BackgroundService
+    public class EthUsdHostedService : BackgroundService
     {
         private readonly ILogger<EthUsdHostedService> _logger;
         private readonly IOrderService _orderService;
@@ -18,9 +18,20 @@ namespace B3.Worker.HostedService
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
+                await DoWorkAsync();
+        }
+
+        public async Task DoWorkAsync()
+        {
+            _logger.LogInformation("Serviço executado em: {time}", DateTimeOffset.Now);
+            try
             {
-                _logger.LogInformation("Serviço executado em: {time}", DateTimeOffset.Now);
                 await _orderService.EthUsdExecute();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Erro durante execução do serviço: {message}", ex.Message);
+                throw;
             }
         }
     }

@@ -12,7 +12,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
     <PackageReference Include="Moq" Version="4.20.70" />
-    <PackageReference Include="Moq.AutoMock" Version="3.5.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\B3.Worker.Service\B3.Worker.Service.csproj" />
+    <ProjectReference Include="..\..\..\src\B3.Worker\B3.Worker.csproj" />
   </ItemGroup>
 
 </Project>

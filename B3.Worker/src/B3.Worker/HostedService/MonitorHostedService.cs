@@ -1,20 +1,19 @@
 ﻿using B3.Worker.Service.Interfaces.Services;
-using B3.Worker.Shared.Settings;
-using Microsoft.Extensions.Options;
+using B3.Worker.Shared.Interfaces;
 
 namespace B3.Worker.HostedService
 {
-    internal class MonitorHostedService : BackgroundService
+    public class MonitorHostedService : BackgroundService
     {
         private readonly ILogger<MonitorHostedService> _logger;
         private readonly IMonitorService _monitorService;
-        private readonly IOptionsMonitor<AppSettings> _appSettings;
+        private readonly IAppSettings _appSettings;
         protected Timer? _timer = null;
         private bool isRunning = false;
 
         public MonitorHostedService(
             ILogger<MonitorHostedService> logger,
-            IOptionsMonitor<AppSettings> appSettings,
+            IAppSettings appSettings,
             IMonitorService monitorService)
         {
             _logger = logger;
@@ -25,28 +24,25 @@ namespace B3.Worker.HostedService
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
-            {
-                _timer = new Timer(DoWorkAsync, null, 0, _appSettings.CurrentValue.ExecutionIntervalMiliseconds);
-            }
-
-            await Task.FromResult(_timer);
+                _timer = new Timer(DoWorkAsync, null, 0, _appSettings.GetExecutionIntervalMiliseconds());
         }
 
-        private async void DoWorkAsync(object? state)
+        public async void DoWorkAsync(object? state)
         {
-            if (!isRunning)
+            try
             {
-                isRunning = true;
-
-                Console.WriteLine("");
-                Console.WriteLine("");
-                Console.WriteLine("");
-                Console.WriteLine("");
-                Console.WriteLine("");
-
-                _logger.LogWarning("Serviço executado em: {time}", DateTimeOffset.Now);
-                await _monitorService.MonitorExecute();
-                isRunning = false;
+                if (!isRunning)
+                {
+                    isRunning = true;
+                    //_logger.LogWarning("Serviço executado em: {time}", DateTimeOffset.Now);
+                    await _monitorService.MonitorExecute();
+                    isRunning = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Erro durante execução do serviço: {message}", ex.Message);
+                throw new Exception();
             }
         }
     }
