@@ -12,5 +12,6 @@ namespace B3.Api.Models
         public OperatorType orderType { get; set; }
         public decimal amount { get; set; }
         public decimal orderValue { get; set; }
+        public string  asset { get; set; }
     }
 }

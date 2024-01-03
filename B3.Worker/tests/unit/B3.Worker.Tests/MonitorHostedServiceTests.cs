@@ -19,7 +19,7 @@ namespace B3.Worker.Tests
             var monitorHostedService = new MonitorHostedService(logger.Object, appSettings.Object, monitorService.Object);
 
             //Act
-            monitorHostedService.DoWorkAsync(null);
+            await monitorHostedService.DoWorkAsync();
 
             //Assert
             //No assertion needed for completion, the test will fail if an exception occurs during the asynchronous operation

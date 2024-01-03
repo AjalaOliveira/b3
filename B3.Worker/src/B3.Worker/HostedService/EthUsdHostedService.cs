@@ -31,6 +31,7 @@ namespace B3.Worker.HostedService
             catch (Exception ex)
             {
                 _logger.LogError("Erro durante execução do serviço: {message}", ex.Message);
+                throw;
             }
         }
     }

@@ -23,22 +23,22 @@ namespace B3.Api.Services
             orders = mongoDatabase.GetCollection<OrderEntity>(databaseSettings.Value.Orders);
         }
 
-        public async Task<BestPrice> CreateAsync(HttpRequestBody HttpRequestBody)
+        public async Task<BestPrice> CreateAsync(HttpRequestBody httpRequestBody)
         {
             var orders = new List<OrderEntity>();
 
-            var lastRegister = await GetLastRegister(HttpRequestBody);
+            var lastRegister = await GetLastRegister(httpRequestBody);
             var allRegisters = await GetAllRegistersFromTimestamp(lastRegister.timestamp);
 
             if (lastRegister != null && allRegisters != null)
             {
-                if (HttpRequestBody.operatorType == OperatorType.Purchase)
+                if (httpRequestBody.operatorType == OperatorType.Purchase)
                     orders = GetOrdersForPurchase(allRegisters).ToList();
                 else
                     orders = GetOrdersForSale(allRegisters).ToList();
             }
 
-            var bestPrice = CreateSimulatedOrder(orders, HttpRequestBody);
+            var bestPrice = CreateSimulatedOrder(orders, httpRequestBody);
             await SaveSimulatedOrder(bestPrice);
 
             return bestPrice;
@@ -50,9 +50,9 @@ namespace B3.Api.Services
 
         #region Private Methods
 
-        private async Task<OrderEntity> GetLastRegister(HttpRequestBody HttpRequestBody)
+        private async Task<OrderEntity> GetLastRegister(HttpRequestBody httpRequestBody)
         {
-            return await orders.Find(x => x.channel == HttpRequestBody.currencyPair)
+            return await orders.Find(x => x.channel == httpRequestBody.currencyPair)
                                .Sort(new BsonDocument("$natural", -1))
                                .FirstOrDefaultAsync();
         }
@@ -93,6 +93,11 @@ namespace B3.Api.Services
                     control += order.amount;
                     bestPrice.orderList.Add(order);
                     bestPrice.orderValue += order.orderValue;
+
+                    if (httpRequestBody.currencyPair == CurrencyPair.BtcUsd)
+                        bestPrice.asset = "BTC";
+                    else
+                        bestPrice.asset = "ETH";
                 }
                 else
                 {
