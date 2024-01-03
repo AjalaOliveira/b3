@@ -1,18 +1,11 @@
 ﻿using B3.Worker.Data.Entities;
 using B3.Worker.Data.Interfaces;
 using B3.Worker.Service.Interfaces.Services;
-using B3.Worker.Service.Process;
 using B3.Worker.Service.Services;
 using B3.Worker.Shared.Interfaces;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace B3.Worker.Service.Tests

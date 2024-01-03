@@ -1,8 +1,6 @@
-﻿using B3.Worker.Data;
-using B3.Worker.Data.Entities;
+﻿using B3.Worker.Data.Entities;
 using B3.Worker.Data.Interfaces;
 using B3.Worker.Service.Interfaces.Services;
-using B3.Worker.Service.Services;
 using B3.Worker.Shared.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;

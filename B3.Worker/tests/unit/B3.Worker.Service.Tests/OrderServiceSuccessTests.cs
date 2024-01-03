@@ -1,5 +1,4 @@
 using B3.Worker.Service.Process;
-using System;
 using Xunit;
 
 namespace B3.Worker.Service.Tests

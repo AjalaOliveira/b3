@@ -1,4 +1,3 @@
-using B3.Worker.Data;
 using B3.Worker.Data.Interfaces;
 using B3.Worker.Service.Interfaces.Services;
 using B3.Worker.Service.Process;

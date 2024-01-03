@@ -23,18 +23,22 @@ namespace B3.Worker.HostedService
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.LogWarning("Serviço executado em: {time}", DateTimeOffset.Now);
+
             while (!stoppingToken.IsCancellationRequested)
-                _timer = new Timer(DoWorkAsync, null, 0, _appSettings.GetExecutionIntervalMiliseconds());
+                await DoWorkAsync();
         }
 
-        public async void DoWorkAsync(object? state)
+        public async Task DoWorkAsync()
         {
             try
             {
                 if (!isRunning)
                 {
                     isRunning = true;
-                    //_logger.LogWarning("Serviço executado em: {time}", DateTimeOffset.Now);
+
+                    Thread.Sleep(_appSettings.GetExecutionIntervalMiliseconds());
+
                     await _monitorService.MonitorExecute();
                     isRunning = false;
                 }
@@ -42,7 +46,6 @@ namespace B3.Worker.HostedService
             catch (Exception ex)
             {
                 _logger.LogError("Erro durante execução do serviço: {message}", ex.Message);
-                throw new Exception();
             }
         }
     }

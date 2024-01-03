@@ -1,6 +1,6 @@
 ﻿namespace B3.Worker.Data.Entities
 {
-    public class Data
+    public class OrderData
     {
         public string timestamp { get; set; }
         public string microtimestamp { get; set; }

@@ -1,6 +1,4 @@
-﻿using B3.Worker.Data.Entities;
-
-namespace B3.Worker.Service.Interfaces.Services
+﻿namespace B3.Worker.Service.Interfaces.Services
 {
     public interface IOrderService
     {

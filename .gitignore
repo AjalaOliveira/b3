@@ -9,3 +9,6 @@
 
 /B3.Worker/tests/unit/*/bin
 /B3.Worker/tests/unit/*/obj
+/B3.Api/src/B3.Api/.vs
+/B3.Api/src/B3.Api/B3.Api/bin/Debug/net7.0
+/B3.Api/src/B3.Api/B3.Api/obj
